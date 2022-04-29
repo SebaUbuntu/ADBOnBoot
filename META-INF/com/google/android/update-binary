@@ -39,6 +39,15 @@ if [ "$(mount | grep "/mnt/system")" = "" ]; then
 fi
 
 AB_SLOT=$(getprop ro.boot.slot_suffix)
+if [ -z $AB_SLOT ]; then
+    AB_SLOT=_$(getprop ro.boot.slot)
+    if [ $AB_SLOT = "_" ]; then
+	AB_SLOT=
+    fi
+fi
+if [ -z $AB_SLOT ]; then
+    AB_SLOT=$(cat /proc/cmdline 2>/dev/null | tr ' ' '\n' | grep slot | grep -v simslot | cut -d'=' -f2)
+fi
 
 mount -o rw,remount /mnt/system
 if [ -e "/dev/block/bootdevice/by-name/product$AB_SLOT" ]; then
