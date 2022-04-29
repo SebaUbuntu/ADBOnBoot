@@ -1,0 +1,69 @@
+#!/sbin/sh
+# Author: Sebastiano Barezzi
+# Version: 1.0
+
+OUTFD=$2
+
+# $1: text
+ui_print() {
+    until [ ! "$1" ]; do
+        echo -e "ui_print $1\nui_print" >> /proc/self/fd/$OUTFD
+        shift
+    done
+}
+
+# $1: key
+# $2: value
+# $3: file
+# $4: override=true
+setprop_to_file() {
+    key="$1"
+    value="$2"
+    file="$3"
+    override="$4"
+
+    if [ "$override" = "" ]; then
+        override="true"
+    fi
+
+    if grep -Fq "$key=" "$file"; then
+        sed -i "s|$key=.*|$key=$value|" "$file"
+    elif [ "$override" = "true" ]; then
+        echo "$key=$value" >> "$file"
+    fi
+}
+
+if [ "$(mount | grep "/mnt/system")" = "" ]; then
+    ui_print "Mount system in Advanced options before flashing this zip!"
+    exit 1
+fi
+
+mount -o rw,remount /mnt/system
+if [ -e "/dev/block/bootdevice/by-name/product" ]; then
+    mount "/dev/block/bootdevice/by-name/product" "/mnt/product"
+elif [ -e "/dev/block/mapper/product" ]; then
+    mount "/dev/block/mapper/product" "/mnt/product"
+fi
+
+FOUND_BUILD_PROP="false"
+for path in product product/etc; do
+    for file in /mnt/$path/build.prop /mnt/system/$path/build.prop /mnt/system/system/$path/build.prop; do
+        if [ -f "$file" ]; then
+            ui_print "$file valid"
+            FOUND_BUILD_PROP="true"
+            setprop_to_file "ro.adb.secure" "0" "$file" true
+            setprop_to_file "ro.secure" "0" "$file" true
+            setprop_to_file "ro.debuggable" "1" "$file" true
+            setprop_to_file "persist.service.debuggable" "1" "$file" true
+            setprop_to_file "persist.service.adb.enable" "1" "$file" true
+            setprop_to_file "persist.sys.usb.config" "adb" "$file" true
+        fi
+    done
+done
+
+if [ "$FOUND_BUILD_PROP" = "false" ]; then
+    ui_print "No build.prop found!"
+    exit 1
+fi
+
+exit 0

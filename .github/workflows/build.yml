@@ -1,0 +1,26 @@
+name: build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Build
+      run: |
+        zip -r ADBOnBoot.zip ./*
+    - uses: actions/upload-artifact@v1
+      with:
+        name: ADBOnBoot
+        path: ADBOnBoot.zip
+    - uses: marvinpinto/action-automatic-releases@latest
+      if: github.ref == 'refs/heads/master'
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: false
+        title: "${{ env.GITHUB_SHA }}"
+        files: |
+          ADBOnBoot.zip
