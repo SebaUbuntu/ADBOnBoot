@@ -38,11 +38,13 @@ if [ "$(mount | grep "/mnt/system")" = "" ]; then
     exit 1
 fi
 
+AB_SLOT=$(getprop ro.boot.slot_suffix)
+
 mount -o rw,remount /mnt/system
-if [ -e "/dev/block/bootdevice/by-name/product" ]; then
-    mount "/dev/block/bootdevice/by-name/product" "/mnt/product"
-elif [ -e "/dev/block/mapper/product" ]; then
-    mount "/dev/block/mapper/product" "/mnt/product"
+if [ -e "/dev/block/bootdevice/by-name/product$AB_SLOT" ]; then
+    mount "/dev/block/bootdevice/by-name/product$AB_SLOT" "/mnt/product"
+elif [ -e "/dev/block/mapper/product$AB_SLOT" ]; then
+    mount "/dev/block/mapper/product$AB_SLOT" "/mnt/product"
 fi
 
 FOUND_BUILD_PROP="false"
